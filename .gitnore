@@ -1,6 +1,3 @@
-# ==========================
-# Node.js
-# ==========================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -8,43 +5,27 @@ yarn-error.log*
 pnpm-debug.log*
 package-lock.json
 
-# ==========================
-# Ambiente e Configurações
-# ==========================
+
 .env
 .env.local
 .env.*.local
 
-# ==========================
-# Logs
-# ==========================
+
 logs
 *.log
 logs/*.log
 
-# ==========================
-# Sistema Operacional
-# ==========================
 .DS_Store
 Thumbs.db
 
-# ==========================
-# Compilações / Builds
-# ==========================
 dist/
 build/
 .cache/
 
-# ==========================
-# Uploads / Arquivos Públicos
-# ==========================
 public/*
 !public/.gitkeep
 !public/logo.png
 
-# ==========================
-# VSCode / IDE
-# ==========================
 .vscode/
 .idea/
 *.swp
