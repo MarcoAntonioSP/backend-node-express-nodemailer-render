@@ -146,7 +146,7 @@ app.post("/send-email", sendEmailLimiter, async (req, res) => {
         <tr>
           <td style="background-color: #f7f7f7; text-align: center; padding: 15px;">
             <a href="https://www.kisite.com.br" target="_blank">
-              <img src="${appUrl}/logo.png" alt="Logo KiSite" style="height: 60px; margin-bottom: 10px;">
+              <img src="https://backend-node-express-nodemailer-render.onrender.com/logo.png" alt="Logo KiSite" style="height: 60px; margin-bottom: 10px;">
             </a>
             <p style="font-size: 12px; color: #344467; margin: 0;">&copy; ${new Date().getFullYear()} KiSite. Todos os direitos reservados.</p>
           </td>
