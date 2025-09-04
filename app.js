@@ -1,29 +1,41 @@
 // app.js
 
 // 1. IMPORTAÇÃO DOS MÓDULOS
-require("dotenv").config(); // carrega as variáveis do .env
+require("dotenv").config();
 const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
+const helmet = require("helmet");
 
 // 2. CONFIGURAÇÕES INICIAIS
 const app = express();
 
 // 3. VARIÁVEIS DE AMBIENTE
-// No Render, configure estas variáveis no painel
 const user = process.env.SMTP_USER;
 const pass = process.env.SMTP_PASS;
 const host = process.env.SMTP_HOST || "smtp.umbler.com";
 const port = process.env.SMTP_PORT || 587;
+const appUrl =
+  process.env.APP_URL || "https://backend-node-express-nodemailer-render.onrender.com";
 
-// 4. CONFIGURAÇÃO DE CORS
+// Verificação obrigatória das variáveis
+if (!user || !pass || !host || !port) {
+  console.error("❌ Variáveis de ambiente SMTP não configuradas corretamente.");
+  process.exit(1);
+}
+
+// 4. MIDDLEWARES
+// Segurança de headers HTTP
+app.use(helmet());
+
+// CORS dinâmico
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
   : [];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!allowedOrigins.length || !origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Acesso não permitido por CORS"));
@@ -34,10 +46,14 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-
-app.use(express.static("public"));
+app.use(express.static("public")); // serve arquivos da pasta /public
 
 // 5. ROTAS
+
+// Healthcheck (Render pode usar para monitoramento)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", service: "email-backend" });
+});
 
 // Rota de teste
 app.get("/", (req, res) => {
@@ -48,25 +64,31 @@ app.get("/", (req, res) => {
 app.post("/send-email", async (req, res) => {
   const { from_name, from_email, subject, message } = req.body;
 
+  // Validação de campos obrigatórios
   if (!from_name || !from_email || !subject || !message) {
     return res
       .status(400)
       .json({ success: false, message: "Todos os campos são obrigatórios." });
   }
 
+  // Validação de e-mail
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(from_email)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "E-mail inválido informado." });
+  }
+
+  // Configuração do transporte de e-mail
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT), // garante que seja número
-    secure: false, // false para porta 587
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
+    host,
+    port: Number(port),
+    secure: false,
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false },
   });
 
+  // Configuração do e-mail
   const mailOptions = {
     from: `"${from_name}" <${user}>`,
     to: user,
@@ -99,7 +121,9 @@ app.post("/send-email", async (req, res) => {
         </tr>
         <tr>
           <td style="background-color: #f7f7f7; text-align: center; padding: 15px;">
-            <a href="https://www.kisite.com.br" target="_blank"><img src="http://localhost:3000/logo.png" alt="Logo KiSite" style="height: 60px; margin-bottom: 10px;"></a>
+            <a href="https://www.kisite.com.br" target="_blank">
+              <img src="${appUrl}/logo.png" alt="Logo KiSite" style="height: 60px; margin-bottom: 10px;">
+            </a>
             <p style="font-size: 12px; color: #344467; margin: 0;">&copy; ${new Date().getFullYear()} KiSite. Todos os direitos reservados.</p>
           </td>
         </tr>
@@ -108,14 +132,15 @@ app.post("/send-email", async (req, res) => {
   `,
   };
 
+  // Envio do e-mail
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Mensagem enviada: %s", info.messageId);
+    console.log("📧 Mensagem enviada: %s", info.messageId);
     res
       .status(200)
       .json({ success: true, message: "Mensagem enviada com sucesso!" });
   } catch (error) {
-    console.error("Erro ao enviar e-mail:", error);
+    console.error("❌ Erro ao enviar e-mail:", error);
     res
       .status(500)
       .json({ success: false, message: "Falha ao enviar a mensagem." });
@@ -123,8 +148,7 @@ app.post("/send-email", async (req, res) => {
 });
 
 // 6. INICIALIZAÇÃO DO SERVIDOR
-// Render define a porta automaticamente com process.env.PORT
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
